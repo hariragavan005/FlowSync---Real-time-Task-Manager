@@ -1,19 +1,13 @@
 # 🚀 FlowSync - Real-time Task Manager
 
 <div align="center">
-
-![FlowSync Banner](https://via.placeholder.com/1200x300?text=FlowSync+-+Real-time+Task+Manager)
+ 
 
 ### ⚡ Real-time Collaborative Task Management Platform
 
 Built with the MERN Stack, Socket.IO, and Modern UI Principles
 
----
-
-![GitHub stars](https://img.shields.io/github/stars/yourusername/FlowSync-Real-time-Task-Manager?style=for-the-badge)
-![GitHub forks](https://img.shields.io/github/forks/yourusername/FlowSync-Real-time-Task-Manager?style=for-the-badge)
-![GitHub issues](https://img.shields.io/github/issues/yourusername/FlowSync-Real-time-Task-Manager?style=for-the-badge)
-![GitHub license](https://img.shields.io/github/license/yourusername/FlowSync-Real-time-Task-Manager?style=for-the-badge)
+--- 
 
 </div>
 
