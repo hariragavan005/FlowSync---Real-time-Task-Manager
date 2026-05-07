@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
   XMarkIcon, ClipboardDocumentIcon, CheckIcon,
-  ShareIcon, QrCodeIcon, ChevronRightIcon, ChevronLeftIcon
+  ShareIcon, QrCodeIcon, ChevronRightIcon, ChevronLeftIcon,
+  FolderOpenIcon
 } from '@heroicons/react/24/solid';
 import { createProject } from '../../services/projectService';
 import { showPriorityAlert } from '../../utils/priorityAlerts';
@@ -29,8 +31,9 @@ const Step = ({ n, current, label }) => (
 );
 
 const CreateProjectModal = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ name: '', projectType: '', teamSize: '2-5', workflowType: 'Kanban' });
+  const [form, setForm] = useState({ name: '', projectType: '', teamSize: '2-5', workflowType: 'Kanban', columns: ['To Do', 'In Progress', 'Done'] });
   const [loading, setLoading] = useState(false);
   const [project, setProject] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -64,7 +67,7 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
   };
 
   const handleClose = () => {
-    setStep(1); setForm({ name: '', projectType: '', teamSize: '2-5', workflowType: 'Kanban' });
+    setStep(1); setForm({ name: '', projectType: '', teamSize: '2-5', workflowType: 'Kanban', columns: ['To Do', 'In Progress', 'Done'] });
     setProject(null); setCopied(false); setShowQR(false);
     onClose();
   };
@@ -161,8 +164,11 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
                     <h2 className="text-xl font-bold text-gray-900 mb-1">Choose Workflow</h2>
                     <p className="text-sm text-gray-400 mb-6">How would you like to manage your tasks?</p>
                     <div className="space-y-3">
-                      {WORKFLOWS.map(wf => (
-                        <button key={wf.id} type="button" onClick={() => set('workflowType', wf.id)}
+                       {WORKFLOWS.map(wf => (
+                        <button key={wf.id} type="button" onClick={() => {
+                          set('workflowType', wf.id);
+                          set('columns', wf.id === 'Todo' ? ['To Do', 'Done'] : ['To Do', 'In Progress', 'Done']);
+                        }}
                           className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${
                             form.workflowType === wf.id
                               ? 'border-emerald-400 bg-emerald-50 shadow-sm'
@@ -177,6 +183,76 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
                           </div>
                         </button>
                       ))}
+                    </div>
+
+                    {/* Dynamic Columns Customizer */}
+                    <div className="mt-6 pt-5 border-t border-gray-100">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                        Customize Columns (Workflow Stages)
+                      </label>
+                      <Reorder.Group
+                        axis="x"
+                        values={form.columns || []}
+                        onReorder={(newCols) => set('columns', newCols)}
+                        className="flex flex-wrap gap-2 mb-3"
+                      >
+                        {form.columns?.map((col) => (
+                          <Reorder.Item
+                            key={col}
+                            value={col}
+                            whileDrag={{ scale: 1.05, boxShadow: '0 8px 16px rgba(16,185,129,0.12)' }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100/50 text-xs font-bold text-emerald-700 shadow-sm cursor-grab active:cursor-grabbing select-none"
+                          >
+                            <span className="text-emerald-300 text-[10px] tracking-tighter">⋮⋮</span>
+                            <span>{col}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const updated = form.columns.filter((c) => c !== col);
+                                set('columns', updated);
+                              }}
+                              className="text-emerald-400 hover:text-red-500 transition ml-1"
+                            >
+                              <XMarkIcon className="w-3.5 h-3.5" />
+                            </button>
+                          </Reorder.Item>
+                        ))}
+                      </Reorder.Group>
+
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          id="new-stage-input"
+                          placeholder="e.g. Error in Code, Code Review"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = e.target.value.trim();
+                              if (val && !form.columns.includes(val)) {
+                                set('columns', [...form.columns, val]);
+                                e.target.value = '';
+                              }
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 rounded-xl bg-gray-50 border border-gray-100 focus:border-emerald-400 focus:bg-white outline-none text-xs font-medium transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const input = document.getElementById('new-stage-input');
+                            const val = input?.value.trim();
+                            if (val && !form.columns.includes(val)) {
+                              set('columns', [...form.columns, val]);
+                              input.value = '';
+                            }
+                          }}
+                          className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition"
+                        >
+                          + Add
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1.5">Press Enter or click Add to append a new column stage.</p>
                     </div>
                     <div className="flex gap-3 mt-6">
                       <button onClick={() => setStep(1)} className="flex items-center gap-1 px-5 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 transition">
@@ -200,6 +276,7 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
                         { label: 'Type', value: form.projectType },
                         { label: 'Team Size', value: form.teamSize },
                         { label: 'Workflow', value: form.workflowType },
+                        { label: 'Columns/Stages', value: form.columns?.join(' ➔ ') },
                       ].map(row => (
                         <div key={row.label} className="flex justify-between items-center">
                           <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{row.label}</span>
@@ -261,6 +338,19 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
                         </motion.div>
                       )}
                     </AnimatePresence>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        handleClose();
+                        navigate(`/projects/${project._id}/tasks`);
+                      }}
+                      className="w-full py-3 mb-4 mt-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 hover:shadow-emerald-500/40 transition-all text-sm"
+                    >
+                      <FolderOpenIcon className="w-4 h-4" />
+                      Enter Project Board
+                    </motion.button>
+
                     <button onClick={handleClose} className="text-sm text-gray-400 hover:text-gray-700 underline underline-offset-2 transition">Done</button>
                   </motion.div>
                 )}

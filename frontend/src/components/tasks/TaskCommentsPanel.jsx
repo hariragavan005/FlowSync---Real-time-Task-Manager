@@ -46,7 +46,20 @@ const TaskCommentsPanel = ({ task, projectId, isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const bottomRef = useRef(null);
+
+  // Emit live status (Typing / Viewing) to other team members in real-time
+  useEffect(() => {
+    if (!socket || !projectId || !isOpen) return;
+    const statusValue = isTyping ? 'Typing' : 'Viewing';
+    socket.emit('update_status', { projectId, status: statusValue });
+
+    return () => {
+      // Revert status to Viewing on close/unmount
+      socket.emit('update_status', { projectId, status: 'Viewing' });
+    };
+  }, [isTyping, socket, projectId, isOpen]);
 
   // Fetch comments when panel opens
   useEffect(() => {
@@ -63,6 +76,9 @@ const TaskCommentsPanel = ({ task, projectId, isOpen, onClose }) => {
     if (!socket || !projectId) return;
     const onAdded = ({ taskId, comment }) => {
       if (taskId === task?._id) {
+        // Skip appending comments sent by ourselves to prevent duplicate rendering (since they are handled optimistically)
+        if (comment.author?._id === user?._id || comment.author === user?._id) return;
+
         setComments(prev => {
           const exists = prev.some(c => c._id === comment._id);
           return exists ? prev : [...prev, comment];
@@ -80,7 +96,7 @@ const TaskCommentsPanel = ({ task, projectId, isOpen, onClose }) => {
       socket.off('comment_added', onAdded);
       socket.off('comment_deleted', onDeleted);
     };
-  }, [socket, projectId, task?._id]);
+  }, [socket, projectId, task?._id, user?._id]);
 
   // Scroll to bottom when new comments arrive
   useEffect(() => {
@@ -90,14 +106,34 @@ const TaskCommentsPanel = ({ task, projectId, isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!content.trim() || submitting) return;
-    setSubmitting(true);
+
+    const tempId = `temp-${Date.now()}`;
+    const commentContent = content.trim();
+
+    // Create optimistic temporary comment structure
+    const optimisticComment = {
+      _id: tempId,
+      content: commentContent,
+      author: {
+        _id: user?._id,
+        name: user?.name,
+        avatarUrl: user?.avatarUrl
+      },
+      createdAt: new Date().toISOString(),
+    };
+
+    // Synchronously append to view instantly with zero lag
+    setComments(prev => [...prev, optimisticComment]);
+    setContent('');
+
     try {
-      await api.post(`/comments/tasks/${task._id}/comments`, { content });
-      setContent('');
+      const { data } = await api.post(`/comments/tasks/${task._id}/comments`, { content: commentContent });
+      // Replace the temporary comment with the real saved database comment
+      setComments(prev => prev.map(c => c._id === tempId ? data : c));
     } catch (err) {
       console.error('Comment error:', err);
-    } finally {
-      setSubmitting(false);
+      // Remove from comments list if it fails
+      setComments(prev => prev.filter(c => c._id !== tempId));
     }
   };
 
@@ -217,9 +253,18 @@ const TaskCommentsPanel = ({ task, projectId, isOpen, onClose }) => {
               <div className="flex-1 flex items-end gap-2">
                 <textarea
                   value={content}
-                  onChange={e => setContent(e.target.value)}
+                  onChange={e => {
+                    setContent(e.target.value);
+                    setIsTyping(e.target.value.trim().length > 0);
+                  }}
+                  onFocus={e => setIsTyping(e.target.value.trim().length > 0)}
+                  onBlur={() => setIsTyping(false)}
                   onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); }
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      setIsTyping(false);
+                      handleSubmit(e);
+                    }
                   }}
                   placeholder="Write a comment… (Enter to send)"
                   rows={1}

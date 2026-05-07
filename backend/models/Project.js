@@ -17,7 +17,11 @@ const projectSchema = new mongoose.Schema({
     default: 'Software Development'
   },
   teamSize: { type: String, default: '1-5' },
-  isLocked: { type: Boolean, default: false }
+  isLocked: { type: Boolean, default: false },
+  columns: {
+    type: [String],
+    default: ['To Do', 'In Progress', 'Done']
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Project', projectSchema);

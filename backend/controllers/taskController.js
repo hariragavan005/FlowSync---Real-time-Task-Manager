@@ -5,13 +5,18 @@ const { saveActivity } = require('./activityController');
 // ── Create Task ───────────────────────────────────────────────────────────────
 const createTask = async (req, res) => {
   try {
-    const { title, description, project, assignee, priority, dueDate, dependencies } = req.body;
+    const { title, description, project, assignee, priority, dueDate, dependencies, status, storyPoints } = req.body;
 
     const proj = await Project.findById(project);
     if (!proj) return res.status(404).json({ message: 'Project not found' });
 
+    // Fallback to project's first column, or "To Do"
+    const defaultStatus = proj.columns && proj.columns.length > 0 ? proj.columns[0] : 'To Do';
+
     const task = await Task.create({
       title, description, project, assignee: assignee || null,
+      status: status || defaultStatus,
+      storyPoints: storyPoints || 0,
       priority: priority || 'Medium',
       dueDate: dueDate || undefined,
       dependencies: dependencies || []
@@ -70,8 +75,15 @@ const updateTaskStatus = async (req, res) => {
     const task = await Task.findById(req.params.id).populate('dependencies');
     if (!task) return res.status(404).json({ message: 'Task not found' });
 
-    if (status === 'Completed' && task.dependencies && task.dependencies.length > 0) {
-      const incompleteDeps = task.dependencies.filter(dep => dep.status !== 'Completed');
+    const proj = await Project.findById(task.project);
+    const lastCol = proj?.columns && proj.columns.length > 0 ? proj.columns[proj.columns.length - 1] : 'Done';
+    const isLastColumn = status === lastCol || status === 'Completed' || status === 'Done';
+
+    if (isLastColumn && task.dependencies && task.dependencies.length > 0) {
+      const incompleteDeps = task.dependencies.filter(dep => {
+        const depIsLastColumn = dep.status === lastCol || dep.status === 'Completed' || dep.status === 'Done';
+        return !depIsLastColumn;
+      });
       if (incompleteDeps.length > 0) {
         return res.status(400).json({
           message: 'Cannot complete task. Dependencies are not met.',
@@ -85,7 +97,7 @@ const updateTaskStatus = async (req, res) => {
 
     const io = req.app.get('io');
     io.to(task.project.toString()).emit('task_updated', updatedTask);
-    if (status === 'Completed') {
+    if (isLastColumn) {
       const actMsg = `${req.user.name} completed "${task.title}"`;
       io.to(task.project.toString()).emit('activity_event', {
         type: 'task_completed', userName: req.user.name,
@@ -112,7 +124,7 @@ const updateTask = async (req, res) => {
     const isMember = proj.members.some(m => m.toString() === req.user._id.toString());
     if (!isMember) return res.status(403).json({ message: 'Not authorized' });
 
-    const { title, description, assignee, priority, dueDate, dependencies, status } = req.body;
+    const { title, description, assignee, priority, dueDate, dependencies, status, isStarred, labels, storyPoints } = req.body;
 
     if (title !== undefined) task.title = title;
     if (description !== undefined) task.description = description;
@@ -121,6 +133,9 @@ const updateTask = async (req, res) => {
     if (dueDate !== undefined) task.dueDate = dueDate || null;
     if (dependencies !== undefined) task.dependencies = dependencies;
     if (status !== undefined) task.status = status;
+    if (isStarred !== undefined) task.isStarred = isStarred;
+    if (labels !== undefined) task.labels = labels;
+    if (storyPoints !== undefined) task.storyPoints = storyPoints;
 
     const updatedTask = await task.save();
     await updatedTask.populate('assignee', 'name email');

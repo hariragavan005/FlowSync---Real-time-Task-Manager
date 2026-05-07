@@ -21,15 +21,17 @@ const STATUSES = ['Pending', 'In Progress', 'Completed'];
  *   onClose: () => void
  *   onSave: (updatedTask) => void  — called with the server response
  *   projectMembers: [{ _id, name, email }]  — for assignee dropdown
+ *   projectColumns: [string] — custom stages list
  */
-const TaskEditModal = ({ task, isOpen, onClose, onSave, projectMembers = [] }) => {
+const TaskEditModal = ({ task, isOpen, onClose, onSave, projectMembers = [], projectColumns = [] }) => {
   const [form, setForm] = useState({
     title: '',
     description: '',
     priority: 'Medium',
-    status: 'Pending',
+    status: 'To Do',
     dueDate: '',
     assignee: '',
+    storyPoints: 0,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,13 +43,14 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave, projectMembers = [] }) =
         title: task.title || '',
         description: task.description || '',
         priority: task.priority || 'Medium',
-        status: task.status || 'Pending',
+        status: task.status || (projectColumns && projectColumns.length > 0 ? projectColumns[0] : 'To Do'),
         dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
         assignee: task.assignee?._id || task.assignee || '',
+        storyPoints: task.storyPoints || 0,
       });
       setError('');
     }
-  }, [task, isOpen]);
+  }, [task, isOpen, projectColumns]);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -64,6 +67,7 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave, projectMembers = [] }) =
         status: form.status,
         dueDate: form.dueDate || null,
         assignee: form.assignee || null,
+        storyPoints: Number(form.storyPoints) || 0,
       };
       const { data } = await api.put(`/tasks/${task._id}`, payload);
       onSave(data);
@@ -167,7 +171,7 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave, projectMembers = [] }) =
                     onChange={e => set('status', e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-transparent focus:border-emerald-400 outline-none text-sm font-semibold appearance-none cursor-pointer"
                   >
-                    {STATUSES.map(s => (
+                    {(projectColumns && projectColumns.length > 0 ? projectColumns : ['To Do', 'In Progress', 'Done']).map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
@@ -199,6 +203,19 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave, projectMembers = [] }) =
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Story Points */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Story Points (Sprint Estimation)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.storyPoints}
+                  onChange={e => set('storyPoints', e.target.value)}
+                  placeholder="e.g. 1, 2, 3, 5, 8, 13"
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-transparent focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/15 outline-none text-sm font-medium transition-all"
+                />
               </div>
 
               {/* Error */}

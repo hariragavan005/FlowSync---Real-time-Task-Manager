@@ -5,7 +5,7 @@ const http = require('http');
 const connectDB = require('./config/db');
 const socketIo = require('socket.io');
 
-// Connect to Database
+// Connect to database with taskmanager dbName option configured
 connectDB();
 
 const app = express();
@@ -39,6 +39,6 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

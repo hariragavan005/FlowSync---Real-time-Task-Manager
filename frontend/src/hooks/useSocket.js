@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 
-const SOCKET_SERVER_URL = import.meta.env?.VITE_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const getSocketUrl = () => {
+  const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:5000';
+  // Strip trailing /api to connect directly to the root socket server
+  return apiUrl.replace(/\/api$/, '');
+};
+
+const SOCKET_SERVER_URL = getSocketUrl();
 
 export const useSocketConnection = () => {
   const [socket, setSocket] = useState(null);
