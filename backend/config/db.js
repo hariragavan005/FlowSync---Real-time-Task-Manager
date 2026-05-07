@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI, {
-      dbName: 'taskmanager'
+      dbName: 'Taskmanager'
     });
     console.log(`MongoDB Connected: ${conn.connection.host}, Database: ${conn.connection.name}`);
   } catch (error) {
