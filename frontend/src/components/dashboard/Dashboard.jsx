@@ -2,13 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { getProjects, deleteProject, updateProject, removeMember } from '../../services/projectService';
+import { getProjects, deleteProject, updateProject, removeMember, toggleProjectLock } from '../../services/projectService';
 import { showPriorityAlert } from '../../utils/priorityAlerts';
 import {
   FolderOpenIcon, UsersIcon, ClipboardDocumentIcon, CheckIcon,
-  PencilIcon, TrashIcon, EyeIcon, XMarkIcon, PlusIcon
+  PencilIcon, TrashIcon, EyeIcon, XMarkIcon, PlusIcon,
+  LockClosedIcon, LockOpenIcon, ChartBarIcon
 } from '@heroicons/react/24/outline';
 import CreateProjectModal from '../projects/CreateProjectModal';
+import ProjectStatsModal from '../projects/ProjectStatsModal';
 import DailySummaryCard from './DailySummaryCard';
 import ActivityFeed from './ActivityFeed';
 import PresenceBar from './PresenceBar';
@@ -118,7 +120,7 @@ const EditModal = ({ project, isOpen, onClose, onSave }) => {
 };
 
 // ---- Project Card ----
-const ProjectCard = ({ project, user, onDelete, onEdit, onViewMembers, onCopy, copiedId }) => {
+const ProjectCard = ({ project, user, onDelete, onEdit, onViewMembers, onCopy, copiedId, onToggleLock, onViewStats }) => {
   const isOwner = project.owner?._id === user?._id || project.owner === user?._id;
   const isAdmin = user?.role === 'Admin';
 
@@ -132,7 +134,14 @@ const ProjectCard = ({ project, user, onDelete, onEdit, onViewMembers, onCopy, c
       <div className="h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
       <div className="p-6 flex flex-col flex-1">
         <div className="flex justify-between items-start gap-2 mb-4">
-          <h3 className="text-lg font-bold text-gray-900 leading-tight">{project.name}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-lg font-bold text-gray-900 leading-tight">{project.name}</h3>
+            {project.isLocked && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                <LockClosedIcon className="w-3 h-3" /> Locked
+              </span>
+            )}
+          </div>
           <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${isOwner ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
             {isOwner ? 'Owner' : 'Member'}
           </span>
@@ -167,8 +176,24 @@ const ProjectCard = ({ project, user, onDelete, onEdit, onViewMembers, onCopy, c
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition">
             <EyeIcon className="w-4 h-4" /> Members
           </button>
-          {isOwner && isAdmin && (
+          <button onClick={() => onViewStats(project)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-50 text-violet-700 text-xs font-bold hover:bg-violet-100 transition">
+            <ChartBarIcon className="w-4 h-4" /> Stats
+          </button>
+          {isOwner && (
             <>
+              <button
+                onClick={() => onToggleLock(project._id)}
+                title={project.isLocked ? 'Unlock project (allow new members)' : 'Lock project (block new joins)'}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition ${
+                  project.isLocked
+                    ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}>
+                {project.isLocked
+                  ? <><LockClosedIcon className="w-4 h-4" /> Unlock</>
+                  : <><LockOpenIcon className="w-4 h-4" /> Lock</>}
+              </button>
               <button onClick={() => onEdit(project)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 text-amber-700 text-xs font-bold hover:bg-amber-100 transition">
                 <PencilIcon className="w-4 h-4" /> Edit
@@ -194,7 +219,8 @@ const Dashboard = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editProject, setEditProject] = useState(null);
   const [membersProject, setMembersProject] = useState(null);
-  const [confirm, setConfirm] = useState(null); // { type, project|memberId, projectId }
+  const [confirm, setConfirm] = useState(null);
+  const [statsProject, setStatsProject] = useState(null);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -232,6 +258,15 @@ const Dashboard = () => {
 
   const handleRemoveMember = async (projectId, memberId) => {
     setConfirm({ type: 'member', projectId, memberId });
+  };
+
+  const handleToggleLock = async (projectId) => {
+    try {
+      await toggleProjectLock(projectId);
+      fetchProjects();
+    } catch (err) {
+      showPriorityAlert(err.response?.data?.message || 'Failed to toggle lock', 'high');
+    }
   };
 
   const handleConfirmRemoveMember = async () => {
@@ -274,14 +309,12 @@ const Dashboard = () => {
               <h1 className="text-3xl font-extrabold text-white">{user?.name?.split(' ')[0]}'s Workspace</h1>
               <p className="text-emerald-100 text-sm mt-1">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
             </div>
-            {user?.role === 'Admin' && (
-              <motion.button onClick={() => setCreateOpen(true)}
-                whileHover={{ scale: 1.05, boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}
-                whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-emerald-700 font-bold text-sm shadow-lg flex-shrink-0">
-                <PlusIcon className="w-5 h-5" /> New Project
-              </motion.button>
-            )}
+            <motion.button onClick={() => setCreateOpen(true)}
+              whileHover={{ scale: 1.05, boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}
+              whileTap={{ scale: 0.97 }}
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-emerald-700 font-bold text-sm shadow-lg flex-shrink-0">
+              <PlusIcon className="w-5 h-5" /> New Project
+            </motion.button>
           </div>
         </motion.div>
 
@@ -346,9 +379,9 @@ const Dashboard = () => {
                 className="text-center py-24 bg-white/60 backdrop-blur-xl rounded-3xl border border-white/60 shadow-sm">
                 <FolderOpenIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-700 mb-2">No projects yet</h3>
-                <p className="text-gray-400 text-sm max-w-xs mx-auto">
-                  {user?.role === 'Admin' ? 'Create your first project to get started.' : 'Ask an Admin to invite you to a project.'}
-                </p>
+                  <p className="text-gray-400 text-sm max-w-xs mx-auto">
+                    Create your first project or join one using an invite code.
+                  </p>
               </motion.div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -362,6 +395,8 @@ const Dashboard = () => {
                     onViewMembers={setMembersProject}
                     onCopy={handleCopy}
                     copiedId={copiedId}
+                    onToggleLock={handleToggleLock}
+                    onViewStats={setStatsProject}
                   />
                 ))}
               </div>
@@ -395,6 +430,12 @@ const Dashboard = () => {
           : 'This member will be removed from the project.'}
         onConfirm={confirm?.type === 'project' ? handleDelete : handleConfirmRemoveMember}
         onCancel={() => setConfirm(null)}
+      />
+      <ProjectStatsModal
+        projectId={statsProject?._id}
+        projectName={statsProject?.name}
+        isOpen={!!statsProject}
+        onClose={() => setStatsProject(null)}
       />
     </div>
   );

@@ -83,17 +83,15 @@ const DashboardNavbar = ({ onCreateProject }) => {
 
             {/* Right CTAs */}
             <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
-              {user?.role === 'Admin' && (
-                <motion.button
-                  onClick={() => setModalOpen(true)}
-                  whileHover={{ scale: 1.05, boxShadow: '0 10px 20px -5px rgba(16,185,129,0.35)' }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-1.5 text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-5 py-2 rounded-full shadow-md"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                  Create Project
-                </motion.button>
-              )}
+              <motion.button
+                onClick={() => setModalOpen(true)}
+                whileHover={{ scale: 1.05, boxShadow: '0 10px 20px -5px rgba(16,185,129,0.35)' }}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center gap-1.5 text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-5 py-2 rounded-full shadow-md"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Create Project
+              </motion.button>
 
               {/* Profile Dropdown */}
               <div className="relative" ref={dropdownRef}>

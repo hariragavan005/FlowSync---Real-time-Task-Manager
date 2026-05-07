@@ -16,7 +16,8 @@ const projectSchema = new mongoose.Schema({
     enum: ['Software Development', 'College Project', 'Startup Workflow', 'Hackathon', 'Personal Productivity', 'Freelance Work'],
     default: 'Software Development'
   },
-  teamSize: { type: String, default: '1-5' }
+  teamSize: { type: String, default: '1-5' },
+  isLocked: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Project', projectSchema);
