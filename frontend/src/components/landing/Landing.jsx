@@ -116,14 +116,25 @@ const Landing = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                <motion.a 
-                  href="/signup"
-                  whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.2)" }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-lg shadow-lg shadow-emerald-500/30 transition-all text-center"
-                >
-                  Get Started
-                </motion.a>
+                {user ? (
+                  <motion.button 
+                    onClick={() => navigate('/dashboard')}
+                    whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.2)" }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-lg shadow-lg shadow-emerald-500/30 transition-all text-center"
+                  >
+                    Go to Dashboard
+                  </motion.button>
+                ) : (
+                  <motion.a 
+                    href="/signup"
+                    whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.2)" }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-lg shadow-lg shadow-emerald-500/30 transition-all text-center"
+                  >
+                    Get Started
+                  </motion.a>
+                )}
                 <motion.a 
                   href="#showcase"
                   whileHover={{ scale: 1.05 }}

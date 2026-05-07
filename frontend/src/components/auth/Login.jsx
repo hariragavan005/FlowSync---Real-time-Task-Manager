@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { showPriorityAlert } from '../../utils/priorityAlerts';
@@ -8,14 +8,20 @@ import { motion } from 'framer-motion';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await login(email, password);
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       showPriorityAlert(error.response?.data?.message || 'Login failed', 'high');
     }

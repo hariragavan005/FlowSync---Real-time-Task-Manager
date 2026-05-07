@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { showPriorityAlert } from '../../utils/priorityAlerts';
@@ -10,14 +10,20 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Member');
-  const { register } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await register(name, email, password, role);
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       showPriorityAlert(error.response?.data?.message || 'Registration failed', 'high');
     }

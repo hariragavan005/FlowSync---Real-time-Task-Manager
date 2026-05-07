@@ -123,14 +123,12 @@ const GlobalNavbar = () => {
             <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
               {user ? (
                 <>
-                  {user.role === 'Admin' && (
                     <motion.button onClick={() => setModalOpen(true)}
                       whileHover={{ scale: 1.05, boxShadow: '0 8px 20px -4px rgba(16,185,129,0.4)' }}
                       whileTap={{ scale: 0.97 }}
                       className="flex items-center gap-1.5 text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-5 py-2 rounded-full shadow-md shadow-emerald-500/20">
                       <PlusIcon className="w-4 h-4" /> Create Project
                     </motion.button>
-                  )}
 
                   {/* Profile Dropdown */}
                   <div className="relative" ref={dropdownRef}>
@@ -230,10 +228,8 @@ const GlobalNavbar = () => {
                   {user ? (
                     <>
                       <Link to="/profile" onClick={() => setMobileOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition">Profile</Link>
-                      {user.role === 'Admin' && (
                         <button onClick={() => { setModalOpen(true); setMobileOpen(false); }}
                           className="w-full text-left px-4 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white">+ Create Project</button>
-                      )}
                       <button onClick={handleLogout} className="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition">Logout</button>
                     </>
                   ) : (
