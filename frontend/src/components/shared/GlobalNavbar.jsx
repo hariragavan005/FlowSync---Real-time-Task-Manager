@@ -150,10 +150,10 @@ const GlobalNavbar = () => {
                           transition={{ duration: 0.14, ease: 'easeOut' }}
                           className="absolute right-0 mt-2 w-52 bg-white/95 backdrop-blur-2xl border border-white/70 rounded-2xl shadow-2xl overflow-hidden z-50">
                           <div className="px-4 py-3 border-b border-gray-100/80">
-                            <p className="text-sm font-bold text-gray-900 truncate">{user.name}</p>
-                            <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                            <span className={`mt-1.5 inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${user.role === 'Admin' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
-                              {user.role}
+                            <p className="text-sm font-bold text-gray-900 truncate">{user?.name}</p>
+                            <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                            <span className={`mt-1.5 inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${user?.role === 'Admin' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {user?.role}
                             </span>
                           </div>
                           <div className="p-1.5">
